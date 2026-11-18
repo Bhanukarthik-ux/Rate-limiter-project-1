@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Rate Limiting & Throttle Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div>
+          <h1>API Rate Limiting &amp; Throttle Monitor</h1>
+          <p>Software-only simulation of Product 35 · AWS cloud-ready</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span class="mode-badge" id="modeBadge"><span class="dot"></span> DEMO SIMULATION</span>
+        <button class="outline-btn" id="awsToggle">AWS Connection</button>
+      </div>
+    </header>
+
+    <section class="purpose">
+      <div>
+        <span class="eyebrow">PROJECT PURPOSE</span>
+        <h2>Generate API traffic and clearly show when requests are throttled.</h2>
+        <p>
+          Dashboard buttons replace the physical button, and the status lamp replaces the physical LED.
+          The cloud-ready flow is <strong>Dashboard → API Gateway → Lambda → DynamoDB</strong>.
+        </p>
+      </div>
+      <div class="purpose-flow">
+        <span>Dashboard</span><b>→</b><span>API Gateway</span><b>→</b><span>Lambda</span><b>→</b><span>DynamoDB</span>
+      </div>
+    </section>
+
+    <main class="layout">
+      <aside class="panel controls">
+        <div class="panel-title">
+          <div>
+            <span class="eyebrow">TRAFFIC CONTROLS</span>
+            <h3>Request Simulator</h3>
+          </div>
+          <span class="mini-tag">SOFTWARE INPUT</span>
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label for="rateLimit">Request limit</label>
+            <strong><span id="rateLimitVal">10</span> req/s</strong>
+          </div>
+          <input type="range" id="rateLimit" min="1" max="20" value="10">
+          <div class="range-hint"><span>1</span><span>20 requests/second</span></div>
+        </div>
+
+        <div class="field">
+          <label for="endpoint">Endpoint</label>
+          <select id="endpoint">
+            <option>GET /api/v1/data</option>
+          </select>
+        </div>
+
+        <div class="control-buttons">
+          <button class="primary-btn" id="singleBtn">＋ Send 1 Request</button>
+          <button class="secondary-btn" id="tenBtn">⚡ Send 10 Requests</button>
+          <button class="warning-btn" id="burstBtn">⚠ Generate Burst</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="scenario">
+          <span class="eyebrow">DEMO SCENARIO</span>
+          <p>First send normal traffic. Then generate a burst to exceed the configured limit and demonstrate HTTP <strong>429</strong>.</p>
+          <button class="link-btn" id="demoBtn">▶ Run Full Demo</button>
+        </div>
+
+        <button class="reset-btn" id="resetBtn">↺ Reset Session</button>
+
+        <div class="aws-box" id="awsBox" hidden>
+          <div class="panel-title small">
+            <div>
+              <span class="eyebrow">OPTIONAL LIVE MODE</span>
+              <h3>AWS Connection</h3>
+            </div>
+          </div>
+          <label for="apiUrl">API Gateway URL</label>
+          <input id="apiUrl" type="url" placeholder="https://...execute-api.us-east-1.amazonaws.com/prod/ping">
+          <label for="apiKey">API Key <span>(optional)</span></label>
+          <input id="apiKey" type="password" placeholder="x-api-key">
+          <button class="outline-btn full" id="liveBtn">Use AWS Live API</button>
+          <p class="tiny">In live mode, API Gateway can return real 429 responses from its Usage Plan. The request log still shows both allowed and throttled results.</p>
+        </div>
+      </aside>
+
+      <section class="panel status-panel">
+        <div class="status-top">
+          <span class="eyebrow">THROTTLE INDICATOR</span>
+          <span class="status-chip" id="statusChip">WAITING</span>
+        </div>
+
+        <div class="indicator-wrap">
+          <div class="indicator" id="indicator" data-state="idle">
+            <div class="indicator-core">!</div>
+          </div>
+          <div class="status-code" id="statusCode">—</div>
+          <h2 id="statusTitle">Ready for traffic</h2>
+          <p id="statusMessage">Use the buttons on the left to generate API requests.</p>
+        </div>
+
+        <div class="limit-card">
+          <div>
+            <span class="muted">Current request rate</span>
+            <strong id="currentRate">0 req/s</strong>
+          </div>
+          <div class="rate-track"><div id="rateFill"></div></div>
+          <div class="rate-caption"><span>0</span><span id="limitCaption">Limit 10 req/s</span></div>
+        </div>
+
+        <div class="explain">
+          <div class="explain-icon">i</div>
+          <div>
+            <strong>What this proves</strong>
+            <p>Requests within the limit receive <b>200 OK</b>. Requests above the limit are shown as <b>429 THROTTLED</b>.</p>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel metrics">
+        <div class="panel-title">
+          <div>
+            <span class="eyebrow">LIVE METRICS</span>
+            <h3>Session Summary</h3>
+          </div>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric-card">
+            <span class="metric-number" id="totalCount">0</span>
+            <span class="metric-label">Total Requests</span>
+          </div>
+          <div class="metric-card success">
+            <span class="metric-number" id="allowedCount">0</span>
+            <span class="metric-label">200 Allowed</span>
+          </div>
+          <div class="metric-card danger">
+            <span class="metric-number" id="throttledCount">0</span>
+            <span class="metric-label">429 Throttled</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-number" id="throttleRate">0%</span>
+            <span class="metric-label">Throttle Rate</span>
+          </div>
+        </div>
+
+        <div class="state-legend">
+          <div><span class="legend-dot green"></span><b>Normal</b><span>Requests allowed</span></div>
+          <div><span class="legend-dot red"></span><b>Throttled</b><span>Limit exceeded</span></div>
+        </div>
+
+        <div class="cloud-proof">
+          <span class="eyebrow">CLOUD PROOF</span>
+          <div class="cloud-line"><span>Frontend</span><b>→</b><span>API Gateway</span></div>
+          <div class="cloud-line"><span>API Gateway</span><b>→</b><span>Lambda</span></div>
+          <div class="cloud-line"><span>Lambda</span><b>→</b><span>DynamoDB</span></div>
+        </div>
+      </aside>
+
+      <section class="panel log-panel">
+        <div class="panel-title log-head">
+          <div>
+            <span class="eyebrow">REQUEST LOG</span>
+            <h3>Recent API Activity</h3>
+          </div>
+          <div class="filters">
+            <button class="filter active" data-filter="all">All</button>
+            <button class="filter" data-filter="ok">200</button>
+            <button class="filter" data-filter="throttled">429</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>TIME</th><th>METHOD</th><th>ENDPOINT</th><th>STATUS</th><th>SOURCE</th>
+              </tr>
+            </thead>
+            <tbody id="logBody">
+              <tr class="empty"><td colspan="6">No requests yet. Start the demonstration from the left panel.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Product 35 · Software-only hardware simulation</span>
+      <span>S3 · API Gateway · Lambda · DynamoDB</span>
+    </footer>
+  </div>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
